@@ -6,6 +6,8 @@ use App\Models\ProductAssets;
 use App\Models\Products;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class ControllerProducts extends Controller
@@ -63,24 +65,27 @@ class ControllerProducts extends Controller
             "category_id" => ["required"],
             "name" => ["required"],
             "slug" => ["required"],
-            "price" => ["required", "numeric"],
-            "assets" => ["required", "array"],
-            "assets.*" => ["string"]
+            "price" => ["required", "numeric"]
         ], [
             "category_id.required" => "category_id null",
             "name.required" => "name null",
             "slug.required" => "slug null",
             "price.required" => "price null",
-            "price.numeric" => "price must numeric",
-            "assets.required" => "assets null",
-            "assets.array" => "assets must array",
-            "assets.*.string" => "assets must array of string"
+            "price.numeric" => "price must numeric"
         ]);
         
         if ($validasi->fails()) {
             return response()->json([
                 "status" => "error",
                 "message" => $validasi->errors()->first()
+            ], 422);
+        }
+
+        $assets = $request->file("assets");
+        if ($assets === null || count($assets) == 0) {
+            return response()->json([
+                "status" => "error",
+                "message" => "assets empty"
             ], 422);
         }
 
@@ -96,11 +101,12 @@ class ControllerProducts extends Controller
         $product->price = $price;
         $product->save();
 
-        $assets = $request->post("assets");
         foreach($assets as $asset) {
+            /** @var UploadedFile $asset */
+            $asset->storeAs("public", $asset->getClientOriginalName());
             $newAsset = new ProductAssets();
             $newAsset->product_id = $product->id;
-            $newAsset->image = $asset;
+            $newAsset->image = $asset->getClientOriginalName();
             $newAsset->save();
         }
 
@@ -166,12 +172,18 @@ class ControllerProducts extends Controller
             ], 422);
         }
 
+        
         $product = Products::query()->where("id", "=", $id)->first();
         if ($product == null) {
             return response()->json([
                 "status" => "error",
                 "message" => "product didn't exist"
             ], 422);
+        }
+        
+        $productAssets = ProductAssets::query()->where("product_id", "=", $id)->get();
+        foreach($productAssets as $asset) {
+            Storage::delete("public/".$asset->image);
         }
 
         $product->delete();
