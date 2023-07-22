@@ -41,7 +41,7 @@ Response sistem adalah token yang menjadi token autentikasi Bearer.
         "name" : string,
         "slug" : string,
         "price" : number, 
-        "assets" : string[]
+        "assets" : files[]
     }
      ```
 
@@ -49,14 +49,24 @@ Response sistem adalah token yang menjadi token autentikasi Bearer.
     Bentuk request:
     ```json
     {
+        "id" : number,
         "category_id" : number,
         "name" : string,
         "slug" : string,
-        "price" : number, 
-        "assets" : file[]
+        "price" : number
     }
      ```
 
 4. Request DELETE menuju ``` /products/{id} ```.
+    id adalah id dari product
+
 5. Request POST menuju ``` /assets ```.
+    Bentuk request:
+    ```json
+    {
+        "product_id" : number,
+        "image" : file
+    }
+     ```
+
 6. Request DELETE menuju ``` /assets/{id} ```.
